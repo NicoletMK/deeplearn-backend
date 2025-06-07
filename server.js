@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const dataDir = path.join(__dirname, 'DeepLearnData');
+const dataDir = path.join(__dirname, 'data');
 
 // Save incoming data to a specific file
 app.post('/api/save/:filename', (req, res) => {
