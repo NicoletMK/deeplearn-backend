@@ -1,31 +1,31 @@
-import express, { Request, Response, NextFunction } from 'express';
-import fs from 'fs';
-import path from 'path';
-import cors from 'cors';
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const cors = require('cors');
 
 const app = express();
+
+// ✅ Manual CORS handling for Render with credentials support
 const FRONTEND_ORIGIN = 'https://deeplearn-frontend.vercel.app';
 
-// ✅ FIXED: CORS middleware with proper types
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
-  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
 });
 
 app.use(express.json());
 
+// ✅ Ensure the data directory exists
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir);
 }
 
+// ✅ Save incoming data to JSON files
 app.post('/api/save/:filename', (req, res) => {
   const filename = req.params.filename;
   const filepath = path.join(dataDir, `${filename}.json`);
@@ -44,6 +44,7 @@ app.post('/api/save/:filename', (req, res) => {
   });
 });
 
+// ✅ Mock Creator Mode video generation endpoint
 app.post('/generate', (req, res) => {
   console.log('🎬 /generate endpoint hit (mock)');
   res.json({
@@ -51,6 +52,7 @@ app.post('/generate', (req, res) => {
   });
 });
 
+// ✅ Start the server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`✅ DeepLearn API running on http://localhost:${PORT}`);
