@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+.DS_Store
+
+# Ignore local user uploads and generated output
+uploads/
+static/
+
+# Ignore temp or test files
+temp/
+*.avi
+
+# Ignore virtual environments
+env/
+.venv/
+
+# Don't ignore model checkpoint!
+# Wav2Lip/wav2lip.pth must NOT be excluded — tracked via Git LFS

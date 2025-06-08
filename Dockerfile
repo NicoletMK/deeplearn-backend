@@ -1,21 +1,32 @@
-# Dockerfile
-FROM node:18
-
-# Install ffmpeg for video generation
-RUN apt-get update && apt-get install -y ffmpeg
+# Use official Python slim image
+FROM python:3.9-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy and install dependencies
-COPY package*.json ./
-RUN npm install
+# Install system dependencies: ffmpeg, git-lfs, and libraries needed for OpenCV and PyTorch
+RUN apt-get update && apt-get install -y \
+    git \
+    git-lfs \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the entire source code
+# Set up Git LFS
+RUN git lfs install
+
+# Copy everything into container
 COPY . .
 
-# Expose the server port
-EXPOSE 4000
+# Pull any LFS-tracked files (e.g., wav2lip.pth)
+RUN git lfs pull
 
-# Start the server
-CMD ["node", "server.js"]
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose the Flask port
+EXPOSE 5050
+
+# Start the Flask app
+CMD ["python", "app.py"]
