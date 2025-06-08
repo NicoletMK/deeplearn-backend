@@ -5,18 +5,23 @@ const cors = require('cors');
 
 const app = express();
 
-// ✅ CORS CONFIG — allow Vercel frontend
+// ✅ Allow only your frontend to access the backend
 app.use(cors({
   origin: 'https://deeplearn-frontend.vercel.app',
-  credentials: true, // IMPORTANT for cookies or sessions
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: false
 }));
 
 app.use(express.json());
 
 const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
-// ✅ Save data to specific JSON file
+// ✅ Ensure the data directory exists
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir);
+}
+
+// ✅ Save incoming data to a specific file
 app.post('/api/save/:filename', (req, res) => {
   const filename = req.params.filename;
   const filepath = path.join(dataDir, `${filename}.json`);
@@ -27,7 +32,7 @@ app.post('/api/save/:filename', (req, res) => {
 
     fs.writeFile(filepath, JSON.stringify(updated, null, 2), (err) => {
       if (err) {
-        console.error('❌ Write error:', err);
+        console.error('❌ Error writing file:', err);
         return res.status(500).send('Failed to save data');
       }
       res.send('✅ Data saved successfully');
@@ -35,14 +40,19 @@ app.post('/api/save/:filename', (req, res) => {
   });
 });
 
-// ✅ Mock video generation response
+// ✅ CORS preflight for /generate
+app.options('/generate', cors());
+
+// ✅ Temporary mock response for Creator Mode video generation
 app.post('/generate', (req, res) => {
-  console.log('🎬 /generate called');
-  res.json({ videoUrl: 'https://storage.googleapis.com/deeplearn-assets/placeholder.mp4' });
+  console.log('🎬 Received /generate request (Creator Mode)');
+  res.json({
+    videoUrl: 'https://storage.googleapis.com/deeplearn-assets/placeholder.mp4'
+  });
 });
 
-// ✅ Start server
+// ✅ Start the server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ DeepLearn API server running on http://localhost:${PORT}`);
 });
