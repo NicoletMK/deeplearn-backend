@@ -1,11 +1,19 @@
 # Use Python base image
 FROM python:3.9-slim
 
-# Install system dependencies
+# Install system dependencies including build tools for dlib
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     git \
     curl \
+    cmake \
+    build-essential \
+    python3-dev \
+    pkg-config \
+    libopenblas-dev \
+    liblapack-dev \
+    libx11-dev \
+    libgtk-3-dev \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
