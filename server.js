@@ -1,20 +1,22 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const cors = require('cors');
+import express, { Request, Response, NextFunction } from 'express';
+import fs from 'fs';
+import path from 'path';
+import cors from 'cors';
 
 const app = express();
-
 const FRONTEND_ORIGIN = 'https://deeplearn-frontend.vercel.app';
 
-// ✅ Manual CORS handling for Render to work with credentials
-app.use((req, res, next) => {
+// ✅ FIXED: CORS middleware with proper types
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.header('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
   res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
 });
 
 app.use(express.json());
