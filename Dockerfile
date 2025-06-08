@@ -1,36 +1,36 @@
-# Dockerfile
+# Use Python base image
 FROM python:3.9-slim
 
-# Install system packages
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     git \
-    git-lfs \
-    cmake \
-    build-essential \
-    python3-dev \
+    curl \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
     libxext6 \
-    libgl1-mesa-glx \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
-# Set workdir
+# Set working directory
 WORKDIR /app
 
-# Copy requirements first to leverage Docker cache
+# Copy dependency files
 COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir --use-deprecated=legacy-resolver -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all code
+# Download wav2lip.pth directly (avoid Git LFS)
+RUN mkdir -p Wav2Lip && \
+    curl -L -o Wav2Lip/wav2lip.pth https://zenodo.org/record/5522302/files/wav2lip.pth?download=1
+
+# Copy all app files
 COPY . .
 
-# Expose port
+# Expose the backend port
 EXPOSE 5050
 
-# Start the backend
-CMD ["python3", "app.py"]
+# Start the Flask app
+CMD ["python", "app.py"]
