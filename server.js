@@ -7,63 +7,62 @@ const cors = require('cors');
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
-
 const FRONTEND_ORIGIN = 'https://deeplearn-frontend.vercel.app';
 
-// ✅ CORS setup
-app.use(cors({
-  origin: FRONTEND_ORIGIN,
-  credentials: true
-}));
-
-// ✅ Serve generated videos
+// ✅ Middleware
+app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
+app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ Ensure uploads folder exists
+// ✅ Ensure uploads and data folders exist
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
+const dataDir = path.join(__dirname, 'data');
 
-// ✅ Video generation route
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+
+// ✅ Deepfake Video Generation
 app.post('/generate', upload.fields([{ name: 'image' }, { name: 'audio' }]), (req, res) => {
-  try {
-    const imageFile = req.files.image[0];
-    const audioFile = req.files.audio[0];
+  const imagePath = req.files.image[0].path;
+  const audioPath = req.files.audio[0].path;
+  const outputName = `output-${Date.now()}.mp4`;
+  const outputPath = path.join('uploads', outputName);
 
-    const imagePath = `${imageFile.path}.png`;
-    const audioPath = `${audioFile.path}.mp3`;
+  const command = `ffmpeg -loop 1 -i ${imagePath} -i ${audioPath} -shortest -c:v libx264 -c:a aac -b:a 192k -pix_fmt yuv420p ${outputPath}`;
 
-    // ✅ Rename temp files to include extensions
-    fs.renameSync(imageFile.path, imagePath);
-    fs.renameSync(audioFile.path, audioPath);
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error('❌ ffmpeg error:', error.message);
+      console.error('stderr:', stderr);
+      return res.status(500).send('Failed to generate video');
+    }
 
-    const outputName = `output-${Date.now()}.mp4`;
-    const outputPath = path.join('uploads', outputName);
-
-    const command = `ffmpeg -loop 1 -i ${imagePath} -i ${audioPath} -shortest -c:v libx264 -c:a aac -b:a 192k -pix_fmt yuv420p ${outputPath}`;
-
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error('❌ ffmpeg error:', error.message);
-        return res.status(500).send('Failed to generate video');
-      }
-
-      // ✅ Clean up temp files
-      fs.unlink(imagePath, () => {});
-      fs.unlink(audioPath, () => {});
-
-      console.log(`✅ Video created: ${outputName}`);
-      res.json({ videoUrl: `https://deeplearn-backend.onrender.com/${outputPath}` });
-    });
-  } catch (err) {
-    console.error('❌ Unexpected error:', err.message);
-    res.status(500).send('Internal Server Error');
-  }
+    console.log(`✅ Video created: ${outputName}`);
+    res.json({ videoUrl: `https://deeplearn-backend.onrender.com/${outputPath}` });
+  });
 });
 
-// ✅ Start the server
+// ✅ Data Saving Route
+app.post('/api/save/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(dataDir, `${filename}.json`);
+
+  fs.readFile(filepath, 'utf-8', (err, data) => {
+    const existing = err ? [] : JSON.parse(data || '[]');
+    const updated = [...existing, req.body];
+
+    fs.writeFile(filepath, JSON.stringify(updated, null, 2), (err) => {
+      if (err) {
+        console.error('❌ Error writing file:', err);
+        return res.status(500).send('Failed to save data');
+      }
+      res.send('✅ Data saved successfully');
+    });
+  });
+});
+
+// ✅ Start Server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`✅ DeepLearn backend running on http://localhost:${PORT}`);
+  console.log(`✅ DeepLearn backend running on port ${PORT}`);
 });
