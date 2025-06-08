@@ -21,6 +21,7 @@
   "homepage": "https://github.com/NicoletMK/deeplearn-backend#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "multer": "^2.0.1"
   }
 }
