@@ -1,21 +1,35 @@
-FROM python:3.10-slim
+# Base image with Python 3.9
+FROM python:3.9-slim
 
-# System dependencies
+# Install system dependencies for dlib, ffmpeg, and Git LFS
 RUN apt-get update && apt-get install -y \
-    ffmpeg git git-lfs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    build-essential \
+    cmake \
+    gfortran \
+    libopenblas-dev \
+    liblapack-dev \
+    libx11-dev \
+    libgtk-3-dev \
+    libboost-python-dev \
+    git-lfs \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set work directory
+# Enable Git LFS (required for Wav2Lip model files)
+RUN git lfs install
+
+# Set working directory
 WORKDIR /app
 
-# Copy source code (including Wav2Lip directory and model file)
+# Copy backend files to container
 COPY . .
 
-# Install Python dependencies
-RUN pip install --upgrade pip && pip install --no-cache-dir --use-deprecated=legacy-resolver -r requirements.txt
+# Install Python packages
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port
+# Expose backend port
 EXPOSE 5050
 
-# Start the Flask server
+# Start the Flask app
 CMD ["python", "app.py"]
