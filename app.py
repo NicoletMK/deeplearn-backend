@@ -101,4 +101,52 @@ def generate_video():
             '--outfile', output_path
         ]
 
-        print("🔧 Running command:", " ".join(
+        print("🔧 Running command:", " ".join(command))
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        print("✅ STDOUT:\n", result.stdout)
+        print("❌ STDERR:\n", result.stderr)
+
+        if result.returncode != 0 or not os.path.exists(output_path):
+            print("❌ Deepfake generation failed or output file missing.")
+            return jsonify({'error': 'Deepfake generation failed', 'details': result.stderr}), 500
+
+        # Re-encode and compress the final video
+        subprocess.run([
+            'ffmpeg', '-y', '-i', output_path,
+            '-vf', 'scale=640:-1',
+            '-c:v', 'libx264', '-crf', '28', '-preset', 'fast',
+            '-c:a', 'aac', '-b:a', '128k',
+            final_output_path
+        ])
+
+    except Exception as e:
+        print("❌ Wav2Lip subprocess error:", str(e))
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+    video_url = f"http://localhost:5050/static/{os.path.basename(final_output_path)}"
+    print("✅ Video generated at:", video_url)
+
+    return jsonify({'videoUrl': video_url}), 200
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(OUTPUT_FOLDER, filename)
+
+def cleanup_old_files(folder, age_seconds=120):
+    while True:
+        now = time.time()
+        for filename in os.listdir(folder):
+            path = os.path.join(folder, filename)
+            if os.path.isfile(path) and now - os.path.getmtime(path) > age_seconds:
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    print(f"Failed to delete {path}: {e}")
+        time.sleep(300)
+
+threading.Thread(target=cleanup_old_files, args=(UPLOAD_FOLDER,), daemon=True).start()
+threading.Thread(target=cleanup_old_files, args=(OUTPUT_FOLDER,), daemon=True).start()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5050, debug=True)
