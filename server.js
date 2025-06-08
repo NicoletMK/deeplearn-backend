@@ -4,17 +4,25 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+
+// ✅ Allow only your Vercel frontend to access the backend
+const corsOptions = {
+  origin: 'https://deeplearn-frontend.vercel.app',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const dataDir = path.join(__dirname, 'data');
 
-// Ensure the data directory exists
+// ✅ Ensure the data directory exists
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir);
 }
 
-// Save incoming data to a specific JSON file
+// ✅ API to save incoming data to the correct JSON file
 app.post('/api/save/:filename', (req, res) => {
   const filename = req.params.filename;
   const filepath = path.join(dataDir, `${filename}.json`);
@@ -33,16 +41,15 @@ app.post('/api/save/:filename', (req, res) => {
   });
 });
 
-// Temporary mock response for Creator Mode video generation
+// ✅ Mock endpoint for Creator Mode video generation
 app.post('/generate', (req, res) => {
   console.log('🎬 Received /generate request (Creator Mode)');
-  // TODO: Replace this with real video generation logic if needed
   res.json({
-    videoUrl: 'https://storage.googleapis.com/deeplearn-assets/placeholder.mp4' // Replace with real URL or path if available
+    videoUrl: 'https://storage.googleapis.com/deeplearn-assets/placeholder.mp4'
   });
 });
 
-// Start the server
+// ✅ Start server on provided or default port
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`✅ DeepLearn API server running on http://localhost:${PORT}`);
