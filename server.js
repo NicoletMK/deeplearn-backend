@@ -5,24 +5,18 @@ const cors = require('cors');
 
 const app = express();
 
-// ✅ Allow only your Vercel frontend to access the backend
-const corsOptions = {
+// ✅ CORS CONFIG — allow Vercel frontend
+app.use(cors({
   origin: 'https://deeplearn-frontend.vercel.app',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type']
-};
+  credentials: true, // IMPORTANT for cookies or sessions
+}));
 
-app.use(cors(corsOptions));
 app.use(express.json());
 
 const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
-// ✅ Ensure the data directory exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir);
-}
-
-// ✅ API to save incoming data to the correct JSON file
+// ✅ Save data to specific JSON file
 app.post('/api/save/:filename', (req, res) => {
   const filename = req.params.filename;
   const filepath = path.join(dataDir, `${filename}.json`);
@@ -33,7 +27,7 @@ app.post('/api/save/:filename', (req, res) => {
 
     fs.writeFile(filepath, JSON.stringify(updated, null, 2), (err) => {
       if (err) {
-        console.error('❌ Error writing file:', err);
+        console.error('❌ Write error:', err);
         return res.status(500).send('Failed to save data');
       }
       res.send('✅ Data saved successfully');
@@ -41,16 +35,14 @@ app.post('/api/save/:filename', (req, res) => {
   });
 });
 
-// ✅ Mock endpoint for Creator Mode video generation
+// ✅ Mock video generation response
 app.post('/generate', (req, res) => {
-  console.log('🎬 Received /generate request (Creator Mode)');
-  res.json({
-    videoUrl: 'https://storage.googleapis.com/deeplearn-assets/placeholder.mp4'
-  });
+  console.log('🎬 /generate called');
+  res.json({ videoUrl: 'https://storage.googleapis.com/deeplearn-assets/placeholder.mp4' });
 });
 
-// ✅ Start server on provided or default port
+// ✅ Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`✅ DeepLearn API server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
