@@ -61,8 +61,10 @@ def collect_form_data(form_type):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/generate', methods=['POST'])
+@app.route('/deeplearn-generate', methods=['POST'])  # renamed for clarity
 def generate_video():
+    print("🎯 /deeplearn-generate endpoint was HIT")
+
     image = request.files.get('image')
     audio = request.files.get('audio')
 
@@ -78,6 +80,7 @@ def generate_video():
     image.save(image_path)
     audio.save(raw_audio_path)
 
+    # Convert audio to wav format
     os.system(f"ffmpeg -y -i {raw_audio_path} -ar 16000 -ac 1 -vn {audio_path}")
 
     try:
