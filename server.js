@@ -16,56 +16,50 @@ app.use(cors({
   credentials: true
 }));
 
-// ✅ JSON body parser
-app.use(express.json());
+// ✅ Serve generated videos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ Ensure uploads and data folders exist
+// ✅ Ensure uploads folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
-
-// ✅ Serve video files
-app.use('/uploads', express.static(uploadsDir));
-
-// ✅ POST /generate to create video
+// ✅ Video generation route
 app.post('/generate', upload.fields([{ name: 'image' }, { name: 'audio' }]), (req, res) => {
-  const imagePath = req.files.image[0].path;
-  const audioPath = req.files.audio[0].path;
-  const outputName = `output-${Date.now()}.mp4`;
-  const outputPath = path.join(uploadsDir, outputName);
+  try {
+    const imageFile = req.files.image[0];
+    const audioFile = req.files.audio[0];
 
-  const command = `ffmpeg -loop 1 -i ${imagePath} -i ${audioPath} -shortest -c:v libx264 -c:a aac -b:a 192k -pix_fmt yuv420p ${outputPath}`;
+    const imagePath = `${imageFile.path}.png`;
+    const audioPath = `${audioFile.path}.mp3`;
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error('❌ ffmpeg error:', error.message);
-      return res.status(500).send('Failed to generate video');
-    }
+    // ✅ Rename temp files to include extensions
+    fs.renameSync(imageFile.path, imagePath);
+    fs.renameSync(audioFile.path, audioPath);
 
-    console.log(`✅ Video created: ${outputName}`);
-    res.json({ videoUrl: `https://deeplearn-backend.onrender.com/uploads/${outputName}` });
-  });
-});
+    const outputName = `output-${Date.now()}.mp4`;
+    const outputPath = path.join('uploads', outputName);
 
-// ✅ POST /api/save/:filename to save JSON data
-app.post('/api/save/:filename', (req, res) => {
-  const filename = req.params.filename;
-  const filepath = path.join(dataDir, `${filename}.json`);
+    const command = `ffmpeg -loop 1 -i ${imagePath} -i ${audioPath} -shortest -c:v libx264 -c:a aac -b:a 192k -pix_fmt yuv420p ${outputPath}`;
 
-  fs.readFile(filepath, 'utf-8', (err, data) => {
-    const existing = err ? [] : JSON.parse(data || '[]');
-    const updated = [...existing, req.body];
-
-    fs.writeFile(filepath, JSON.stringify(updated, null, 2), (err) => {
-      if (err) {
-        console.error('❌ Error writing file:', err);
-        return res.status(500).send('Failed to save data');
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('❌ ffmpeg error:', error.message);
+        return res.status(500).send('Failed to generate video');
       }
-      res.send('✅ Data saved successfully');
+
+      // ✅ Clean up temp files
+      fs.unlink(imagePath, () => {});
+      fs.unlink(audioPath, () => {});
+
+      console.log(`✅ Video created: ${outputName}`);
+      res.json({ videoUrl: `https://deeplearn-backend.onrender.com/${outputPath}` });
     });
-  });
+  } catch (err) {
+    console.error('❌ Unexpected error:', err.message);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 // ✅ Start the server
