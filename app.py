@@ -61,7 +61,7 @@ def collect_form_data(form_type):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/deeplearn-generate', methods=['POST'])  # renamed for clarity
+@app.route('/deeplearn-generate', methods=['POST'])
 def generate_video():
     print("🎯 /deeplearn-generate endpoint was HIT")
 
@@ -73,9 +73,11 @@ def generate_video():
 
     session_id = str(uuid.uuid4())
     image_path = os.path.join(UPLOAD_FOLDER, f'{session_id}_input.jpg')
+    resized_path = os.path.join(UPLOAD_FOLDER, f'{session_id}_resized.jpg')
     raw_audio_path = os.path.join(UPLOAD_FOLDER, f'{session_id}_raw.mp3')
     audio_path = os.path.join(UPLOAD_FOLDER, f'{session_id}_input.wav')
     output_path = os.path.join(OUTPUT_FOLDER, f'{session_id}_generated.mp4')
+    final_output_path = os.path.join(OUTPUT_FOLDER, f'{session_id}_final.mp4')
 
     image.save(image_path)
     audio.save(raw_audio_path)
@@ -83,52 +85,20 @@ def generate_video():
     # Convert audio to wav format
     os.system(f"ffmpeg -y -i {raw_audio_path} -ar 16000 -ac 1 -vn {audio_path}")
 
+    # Resize the image to prevent ffmpeg from crashing on large inputs
+    subprocess.run([
+        'ffmpeg', '-y', '-i', image_path,
+        '-vf', 'scale=512:512',
+        resized_path
+    ])
+
     try:
         command = [
             'python3', 'Wav2Lip/inference.py',
             '--checkpoint_path', 'Wav2Lip/wav2lip.pth',
-            '--face', image_path,
+            '--face', resized_path,
             '--audio', audio_path,
             '--outfile', output_path
         ]
 
-        print("🔧 Running command:", " ".join(command))
-        result = subprocess.run(command, capture_output=True, text=True)
-
-        print("✅ STDOUT:\n", result.stdout)
-        print("❌ STDERR:\n", result.stderr)
-
-        if result.returncode != 0 or not os.path.exists(output_path):
-            print("❌ Deepfake generation failed or output file missing.")
-            return jsonify({'error': 'Deepfake generation failed', 'details': result.stderr}), 500
-
-    except Exception as e:
-        print("❌ Wav2Lip subprocess error:", str(e))
-        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
-
-    video_url = f"http://localhost:5050/static/{os.path.basename(output_path)}"
-    print("✅ Video generated at:", video_url)
-
-    return jsonify({'videoUrl': video_url}), 200
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(OUTPUT_FOLDER, filename)
-
-def cleanup_old_files(folder, age_seconds=120):
-    while True:
-        now = time.time()
-        for filename in os.listdir(folder):
-            path = os.path.join(folder, filename)
-            if os.path.isfile(path) and now - os.path.getmtime(path) > age_seconds:
-                try:
-                    os.remove(path)
-                except Exception as e:
-                    print(f"Failed to delete {path}: {e}")
-        time.sleep(300)
-
-threading.Thread(target=cleanup_old_files, args=(UPLOAD_FOLDER,), daemon=True).start()
-threading.Thread(target=cleanup_old_files, args=(OUTPUT_FOLDER,), daemon=True).start()
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050, debug=True)
+        print("🔧 Running command:", " ".join(
