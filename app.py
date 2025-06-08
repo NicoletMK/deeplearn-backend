@@ -31,8 +31,7 @@ def save_data(file_key, new_entry):
     path = data_files[file_key]
     print(f"🟡 Saving to {path}")
     print(f"🟢 New entry: {new_entry}")
-    
-    # Create the file if it doesn't exist
+
     if not os.path.exists(path):
         print("🆕 File does not exist, creating new file...")
         with open(path, 'w') as f:
@@ -50,8 +49,6 @@ def save_data(file_key, new_entry):
         print("✅ Data saved successfully.")
     except Exception as e:
         print(f"❌ Error while saving data: {e}")
-
-
 
 @app.route('/api/<form_type>', methods=['POST'])
 def collect_form_data(form_type):
@@ -84,18 +81,32 @@ def generate_video():
     os.system(f"ffmpeg -y -i {raw_audio_path} -ar 16000 -ac 1 -vn {audio_path}")
 
     try:
-        subprocess.run([
+        command = [
             'python3', 'Wav2Lip/inference.py',
             '--checkpoint_path', 'Wav2Lip/wav2lip.pth',
             '--face', image_path,
             '--audio', audio_path,
             '--outfile', output_path
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        print("Wav2Lip failed:", e)
-        return jsonify({'error': 'Deepfake generation failed'}), 500
+        ]
 
-    return jsonify({'videoUrl': f'http://localhost:5050/static/{os.path.basename(output_path)}'}), 200
+        print("🔧 Running command:", " ".join(command))
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        print("✅ STDOUT:\n", result.stdout)
+        print("❌ STDERR:\n", result.stderr)
+
+        if result.returncode != 0 or not os.path.exists(output_path):
+            print("❌ Deepfake generation failed or output file missing.")
+            return jsonify({'error': 'Deepfake generation failed', 'details': result.stderr}), 500
+
+    except Exception as e:
+        print("❌ Wav2Lip subprocess error:", str(e))
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+    video_url = f"http://localhost:5050/static/{os.path.basename(output_path)}"
+    print("✅ Video generated at:", video_url)
+
+    return jsonify({'videoUrl': video_url}), 200
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
