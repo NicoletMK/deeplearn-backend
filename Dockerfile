@@ -1,35 +1,36 @@
-# Base image with Python 3.9
+# Dockerfile
 FROM python:3.9-slim
 
-# Install system dependencies for dlib, ffmpeg, and Git LFS
+# Install system packages
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    gfortran \
-    libopenblas-dev \
-    liblapack-dev \
-    libx11-dev \
-    libgtk-3-dev \
-    libboost-python-dev \
-    git-lfs \
     ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+    git \
+    git-lfs \
+    cmake \
+    build-essential \
+    python3-dev \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6 \
+    libgl1-mesa-glx \
+    && apt-get clean
 
-# Enable Git LFS (required for Wav2Lip model files)
-RUN git lfs install
-
-# Set working directory
+# Set workdir
 WORKDIR /app
 
-# Copy backend files to container
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --use-deprecated=legacy-resolver -r requirements.txt
+
+# Copy all code
 COPY . .
 
-# Install Python packages
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Expose backend port
+# Expose port
 EXPOSE 5050
 
-# Start the Flask app
-CMD ["python", "app.py"]
+# Start the backend
+CMD ["python3", "app.py"]
