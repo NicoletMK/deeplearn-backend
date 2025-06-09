@@ -1,23 +1,17 @@
-# Use Python base image
+# Use an image that already includes dlib or install dlib via apt
 FROM python:3.9-slim
 
-# Install system dependencies including build tools for dlib
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     git \
     curl \
-    cmake \
-    build-essential \
-    python3-dev \
-    pkg-config \
-    libopenblas-dev \
-    liblapack-dev \
-    libx11-dev \
-    libgtk-3-dev \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
     libxext6 \
+    build-essential \
+    cmake \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -26,18 +20,18 @@ WORKDIR /app
 # Copy dependency files
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install Python dependencies (remove dlib from requirements.txt!)
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download wav2lip.pth directly (avoid Git LFS)
+# Download wav2lip.pth directly (avoid Git LFS + quota issues)
 RUN mkdir -p Wav2Lip && \
     curl -L -o Wav2Lip/wav2lip.pth https://zenodo.org/record/5522302/files/wav2lip.pth?download=1
 
-# Copy all app files
+# Copy rest of the app
 COPY . .
 
-# Expose the backend port
+# Expose Flask port
 EXPOSE 5050
 
 # Start the Flask app
