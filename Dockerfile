@@ -25,8 +25,8 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Download wav2lip.pth directly (avoid Git LFS + quota issues)
-RUN mkdir -p Wav2Lip && \
-    curl -L -o Wav2Lip/wav2lip.pth https://zenodo.org/record/5522302/files/wav2lip.pth?download=1
+COPY Wav2Lip/wav2lip.pth Wav2Lip/wav2lip.pth
+
 
 # Copy rest of the app
 COPY . .
