@@ -1,10 +1,15 @@
 // firebase/firebase.js
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
+const path = require('path');
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+// Prevent reinitialization in serverless environments
+if (!admin.apps.length) {
+  const serviceAccount = require(path.join(__dirname, 'serviceAccountKey.json'));
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
 
 const db = admin.firestore();
 module.exports = db;
