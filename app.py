@@ -93,8 +93,10 @@ def generate_video():
     subprocess.run([
         'ffmpeg', '-y', '-i', image_path,
         '-vf', 'scale=512:512',
+        '-frames:v', '1',
         resized_path
     ])
+
 
     try:
         command = [
@@ -128,7 +130,7 @@ def generate_video():
         print("❌ Wav2Lip subprocess error:", str(e))
         return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
-    video_url = f"http://localhost:5050/static/{os.path.basename(final_output_path)}"
+    video_url = request.host_url + f"static/{os.path.basename(final_output_path)}"
     print("✅ Video generated at:", video_url)
 
     return jsonify({'videoUrl': video_url}), 200
