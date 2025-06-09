@@ -104,7 +104,10 @@ def generate_video():
             '--checkpoint_path', 'Wav2Lip/wav2lip.pth',
             '--face', resized_path,
             '--audio', audio_path,
-            '--outfile', output_path
+            '--outfile', output_path,
+            '--static', 'True',
+            '--fps', '25'
+
         ]
 
         print("🔧 Running command:", " ".join(command))
