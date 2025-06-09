@@ -46,5 +46,13 @@ def collect_form_data(form_type):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
+
+@app.route('/deeplearn-generate', methods=['POST'])
+def deprecated():
+    return jsonify({'error': 'This endpoint is deprecated and no longer supported.'}), 410
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)
