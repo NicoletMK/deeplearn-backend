@@ -25,3 +25,5 @@ Wav2Lip/wav2lip.pth
 
 __pycache__/
 *.pth
+# .gitignore
+firebase/serviceAccountKey.json
