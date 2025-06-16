@@ -1,19 +1,80 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import uuid
-import shutil
 import subprocess
 import os
 import time
+import json
 
-# Initialize Flask app
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=[
     "http://localhost:5173",
     "https://deeplearn-frontend.vercel.app"
 ])
 
-# Auto-cleanup for output files older than an hour (3600s)
+DATA_FOLDER = "data"
+os.makedirs(DATA_FOLDER, exist_ok=True)
+
+data_files = {
+    'pre-survey': os.path.join(DATA_FOLDER, 'preSurveyData.json'),
+    'detective': os.path.join(DATA_FOLDER, 'detectiveData.json'),
+    'ethics': os.path.join(DATA_FOLDER, 'ethicsData.json'),
+    'post-survey': os.path.join(DATA_FOLDER, 'postSurveyData.json'),
+    'welcome': os.path.join(DATA_FOLDER, 'welcomeData.json')
+}
+
+def save_to_json(file_path, payload):
+    try:
+        data = []
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+        data.append(payload)
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"❌ Failed to save to {file_path}: {e}")
+        return False
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin') or '*'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    return response
+
+@app.route('/api/welcome', methods=['POST'])
+def save_welcome():
+    payload = request.get_json()
+    success = save_to_json(data_files['welcome'], payload)
+    return jsonify({'status': 'ok' if success else 'error'}), 200 if success else 500
+
+@app.route('/api/detective', methods=['POST'])
+def save_detective():
+    payload = request.get_json()
+    success = save_to_json(data_files['detective'], payload)
+    return jsonify({'status': 'ok' if success else 'error'}), 200 if success else 500
+
+@app.route('/api/ethics', methods=['POST'])
+def save_ethics():
+    payload = request.get_json()
+    success = save_to_json(data_files['ethics'], payload)
+    return jsonify({'status': 'ok' if success else 'error'}), 200 if success else 500
+
+@app.route('/api/pre-survey', methods=['POST'])
+def save_pre_survey():
+    payload = request.get_json()
+    success = save_to_json(data_files['pre-survey'], payload)
+    return jsonify({'status': 'ok' if success else 'error'}), 200 if success else 500
+
+@app.route('/api/post-survey', methods=['POST'])
+def save_post_survey():
+    payload = request.get_json()
+    success = save_to_json(data_files['post-survey'], payload)
+    return jsonify({'status': 'ok' if success else 'error'}), 200 if success else 500
+
 def cleanup_output_dir(threshold_seconds=3600):
     now = time.time()
     output_folder = 'output'
@@ -69,7 +130,6 @@ def create_deepfake():
         print(f"❌ Deepfake generation failed: {e}")
         return jsonify({'error': str(e)}), 500
 
-# Optional health check route
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok'}), 200
