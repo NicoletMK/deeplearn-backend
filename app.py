@@ -6,12 +6,20 @@ import subprocess
 import os
 import time
 
-# Initialize Flask app
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=[
+
+# Proper CORS setup to allow Vercel frontend
+CORS(app, resources={r"/*": {"origins": [
     "http://localhost:5173",
     "https://deeplearn-frontend.vercel.app"
-])
+]}}, supports_credentials=True)
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
 
 # Auto-cleanup for output files older than an hour (3600s)
 def cleanup_output_dir(threshold_seconds=3600):
@@ -29,26 +37,17 @@ def cleanup_output_dir(threshold_seconds=3600):
 @app.route('/create-deepfake', methods=['POST'])
 def create_deepfake():
     try:
-        image_file_name = request.form['imageFileName']
+        image_file = request.files['image']
         source_video = request.form['sourceVideo']
 
         session_id = str(uuid.uuid4())
         img_path = f"SimSwap/examples/{session_id}.jpg"
-        original_img_path = f"public/characters/{image_file_name}"
-        video_path = f"public/videos/creator/{source_video}"
+        video_path = f"source_videos/{source_video}"
         output_path = f"output/{session_id}.mp4"
 
-        # Validate source files exist
-        if not os.path.exists(original_img_path):
-            return jsonify({'error': f"Image file not found: {original_img_path}"}), 400
-        if not os.path.exists(video_path):
-            return jsonify({'error': f"Video file not found: {video_path}"}), 400
-
         os.makedirs('output', exist_ok=True)
-
-        # Copy image to SimSwap input path
-        shutil.copyfile(original_img_path, img_path)
-        print(f"📥 Copied image from {original_img_path} to {img_path}")
+        image_file.save(img_path)
+        print(f"📥 Saved image to {img_path}")
 
         cleanup_output_dir()
 
@@ -73,11 +72,19 @@ def create_deepfake():
         return send_file(output_path, mimetype='video/mp4', as_attachment=True, download_name='deepfake_output.mp4')
 
     except subprocess.CalledProcessError as err:
-        print(f"❌ SimSwap process failed: {err}")
         return jsonify({'error': f"SimSwap failed: {err}"}), 500
     except Exception as e:
         print(f"❌ Deepfake generation failed: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/welcome', methods=['POST'])
+def save_welcome_data():
+    try:
+        data = request.json
+        print("📥 Received welcome data:", data)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/health')
 def health():
