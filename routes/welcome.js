@@ -1,7 +1,7 @@
 // backend/routes/api/welcome.js
 const express = require('express');
 const router = express.Router();
-const db = require('../../firebase/firebase'); // uses firebase.js
+const db = require('../firebase/firebase'); // uses firebase.js
 
 router.post('/', async (req, res) => {
   try {

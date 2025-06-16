@@ -2,7 +2,5 @@ services:
   - type: web
     name: deeplearn-backend
     env: docker
-    plan: starter
-    branch: main
-    buildCommand: ""
-    startCommand: "python3 app.py"
+    plan: free
+    autoDeploy: true

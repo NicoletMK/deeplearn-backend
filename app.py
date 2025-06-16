@@ -1,58 +1,78 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+import uuid
+import shutil
+import subprocess
 import os
-import json
+import time
 
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=[
     "http://localhost:5173",
     "https://deeplearn-frontend.vercel.app"
 ])
 
-DATA_FOLDER = 'data'
-os.makedirs(DATA_FOLDER, exist_ok=True)
+# Auto-cleanup for output files older than an hour (3600s)
+def cleanup_output_dir(threshold_seconds=3600):
+    now = time.time()
+    output_folder = 'output'
+    for f in os.listdir(output_folder):
+        fpath = os.path.join(output_folder, f)
+        if os.path.isfile(fpath) and now - os.path.getmtime(fpath) > threshold_seconds:
+            try:
+                os.remove(fpath)
+                print(f"🧹 Removed old file: {fpath}")
+            except Exception as e:
+                print(f"⚠️ Failed to delete {fpath}: {e}")
 
-data_files = {
-    'pre-survey': os.path.join(DATA_FOLDER, 'preSurveyData.json'),
-    'detective': os.path.join(DATA_FOLDER, 'detectiveData.json'),
-    'ethics': os.path.join(DATA_FOLDER, 'ethicsData.json'),
-    'post-survey': os.path.join(DATA_FOLDER, 'postSurveyData.json'),
-    'welcome': os.path.join(DATA_FOLDER, 'welcomeData.json')
-}
-
-def save_data(file_key, new_entry):
-    path = data_files[file_key]
-    if not os.path.exists(path):
-        with open(path, 'w') as f:
-            json.dump([], f)
-
+@app.route('/create-deepfake', methods=['POST'])
+def create_deepfake():
     try:
-        with open(path, 'r') as f:
-            data = json.load(f)
-        data.append(new_entry)
-        with open(path, 'w') as f:
-            json.dump(data, f, indent=2)
-    except Exception as e:
-        print(f"❌ Error saving data: {e}")
+        image_file = request.files['image']
+        source_video = request.form['sourceVideo']
 
-@app.route('/api/<form_type>', methods=['POST'])
-def collect_form_data(form_type):
-    if form_type not in data_files:
-        return jsonify({'error': 'Invalid form type'}), 400
-    try:
-        entry = request.get_json()
-        save_data(form_type, entry)
-        return jsonify({'message': 'Saved'}), 200
+        session_id = str(uuid.uuid4())
+        img_path = f"SimSwap/examples/{session_id}.jpg"
+        video_path = f"source_videos/{source_video}"
+        output_path = f"output/{session_id}.mp4"
+
+        os.makedirs('output', exist_ok=True)
+        image_file.save(img_path)
+        print(f"📥 Saved image to {img_path}")
+
+        cleanup_output_dir()
+
+        command = [
+            "python", "SimSwap/test_video_swapsingle.py",
+            "--isTrain", "false",
+            "--name", "people",
+            "--Arc_path", "SimSwap/arcface_model/arcface_checkpoint.tar",
+            "--pic_a_path", img_path,
+            "--video_path", video_path,
+            "--output_path", output_path
+        ]
+
+        print("🚀 Running SimSwap...")
+        subprocess.run(command, check=True)
+        print(f"✅ Video created at {output_path}")
+
+        if os.path.exists(img_path):
+            os.remove(img_path)
+            print(f"🗑️ Deleted temporary image: {img_path}")
+
+        return send_file(output_path, mimetype='video/mp4', as_attachment=True, download_name='deepfake_output.mp4')
+
+    except subprocess.CalledProcessError as err:
+        return jsonify({'error': f"SimSwap failed: {err}"}), 500
     except Exception as e:
+        print(f"❌ Deepfake generation failed: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/health', methods=['GET'])
+# Optional health check route
+@app.route('/health')
 def health():
     return jsonify({'status': 'ok'}), 200
-
-@app.route('/deeplearn-generate', methods=['POST'])
-def deprecated():
-    return jsonify({'error': 'This endpoint is deprecated and no longer supported.'}), 410
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)
