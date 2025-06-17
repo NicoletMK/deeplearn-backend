@@ -37,18 +37,23 @@ def cleanup_output_dir(threshold_seconds=3600):
 @app.route('/create-deepfake', methods=['POST'])
 def create_deepfake():
     try:
-        image_file = request.files['image']
-        source_video = request.form['sourceVideo']
+        image_filename = request.form.get('imageFileName')
+        source_video = request.form.get('sourceVideo')
+
+        if not image_filename or not source_video:
+            return jsonify({'error': 'Missing imageFileName or sourceVideo'}), 400
 
         session_id = str(uuid.uuid4())
-        img_path = f"SimSwap/examples/{session_id}.jpg"
-        video_path = f"source_videos/{source_video}"
-        output_path = f"output/{session_id}.mp4"
+        img_path = os.path.join('public', 'characters', image_filename)
+        video_path = os.path.join('public', 'videos', 'creator', source_video)
+        output_path = os.path.join('output', f"{session_id}.mp4")
+
+        if not os.path.exists(img_path):
+            return jsonify({'error': f"Image not found: {img_path}"}), 400
+        if not os.path.exists(video_path):
+            return jsonify({'error': f"Video not found: {video_path}"}), 400
 
         os.makedirs('output', exist_ok=True)
-        image_file.save(img_path)
-        print(f"📥 Saved image to {img_path}")
-
         cleanup_output_dir()
 
         command = [
@@ -65,10 +70,6 @@ def create_deepfake():
         subprocess.run(command, check=True)
         print(f"✅ Video created at {output_path}")
 
-        if os.path.exists(img_path):
-            os.remove(img_path)
-            print(f"🗑️ Deleted temporary image: {img_path}")
-
         return send_file(output_path, mimetype='video/mp4', as_attachment=True, download_name='deepfake_output.mp4')
 
     except subprocess.CalledProcessError as err:
@@ -76,6 +77,7 @@ def create_deepfake():
     except Exception as e:
         print(f"❌ Deepfake generation failed: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/welcome', methods=['POST'])
 def save_welcome_data():
