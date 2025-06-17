@@ -48,6 +48,14 @@ def create_deepfake():
         video_path = os.path.join('public', 'videos', 'creator', source_video)
         output_path = os.path.join('output', f"{session_id}.mp4")
 
+        print(f"🧠 image_filename: {image_filename}")
+        print(f"🧠 source_video: {source_video}")
+        print(f"🧠 img_path: {img_path}")
+        print(f"🧠 video_path: {video_path}")
+        print(f"✅ img exists: {os.path.exists(img_path)}")
+        print(f"✅ video exists: {os.path.exists(video_path)}")
+
+
         if not os.path.exists(img_path):
             return jsonify({'error': f"Image not found: {img_path}"}), 400
         if not os.path.exists(video_path):
