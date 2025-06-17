@@ -14,9 +14,7 @@ uploads/
 output/
 data/
 SimSwap/examples/
-*.mp4
-*.jpg
-*.png
+
 
 # Environment and config
 .env
