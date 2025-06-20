@@ -6,24 +6,25 @@ router.post('/', async (req, res) => {
   try {
     const {
       userId,
-      videoFile,
-      actualLabel,
-      userGuess,
-      correct,
-      session, // either "pre" or "post"
+      session,          // 'pre' or 'post'
       timestamp,
+      pairIndex,        // index of the video pair
+      selectedIndex,    // 0 or 1
+      actualLabel,      // 'real' or 'fake'
+      correct,          // boolean
+      videos            // [url1, url2]
     } = req.body;
 
-    const collectionName = session === 'pre' ? 'preSurvey' : 'postSurvey';
+    const collectionName = session === 'pre' ? 'detectivePre' : 'detectivePost';
 
     await db.collection(collectionName).add({
       userId,
-      videoFile,
-      actualLabel,
-      userGuess,
-      correct,
-      session,
       timestamp,
+      pairIndex,
+      selectedIndex,
+      actualLabel,
+      correct,
+      videos,
     });
 
     return res.status(200).json({ success: true });

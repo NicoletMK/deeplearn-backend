@@ -18,10 +18,7 @@ temp/
 env/
 .venv/
 
-# Don't ignore model checkpoint!
-# Wav2Lip/wav2lip.pth must NOT be excluded — tracked via Git LFS
-# Ignore model file locally
-Wav2Lip/wav2lip.pth
+
 
 __pycache__/
 *.pth
