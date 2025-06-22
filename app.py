@@ -8,20 +8,20 @@ import time
 
 app = Flask(__name__)
 
-# Proper CORS setup to allow Vercel frontend
+# Enable CORS for local dev + Vercel frontend
 CORS(app, resources={r"/*": {"origins": [
     "http://localhost:5173",
     "https://deeplearn-frontend.vercel.app"
 ]}}, supports_credentials=True)
 
-# Add CORS headers to all responses
+# Add CORS headers globally
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
     return response
 
-# Auto-cleanup for output files older than an hour (3600s)
+# Auto-cleanup for output files older than 1 hour
 def cleanup_output_dir(threshold_seconds=3600):
     now = time.time()
     output_folder = 'output'
@@ -55,7 +55,6 @@ def create_deepfake():
         print(f"✅ img exists: {os.path.exists(img_path)}")
         print(f"✅ video exists: {os.path.exists(video_path)}")
 
-
         if not os.path.exists(img_path):
             return jsonify({'error': f"Image not found: {img_path}"}), 400
         if not os.path.exists(video_path):
@@ -86,13 +85,26 @@ def create_deepfake():
         print(f"❌ Deepfake generation failed: {e}")
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/api/welcome', methods=['POST'])
 def save_welcome_data():
     try:
         data = request.json
         print("📥 Received welcome data:", data)
         return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# 👇 NEW: Explicit OPTIONS handler for /api/ethics
+@app.route('/api/ethics', methods=['OPTIONS'])
+def ethics_options():
+    return '', 200
+
+@app.route('/api/ethics', methods=['POST'])
+def save_ethics_data():
+    try:
+        data = request.json
+        print("📥 Received ethics data:", data)
+        return jsonify({"success": True}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
