@@ -11,4 +11,5 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 ENV PORT=10000
 EXPOSE 10000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "index:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "app:app"]
+
