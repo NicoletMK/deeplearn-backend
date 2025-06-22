@@ -1,10 +1,7 @@
-// firebase/firebase.js
 const admin = require('firebase-admin');
-const path = require('path');
 
-// Prevent reinitialization in serverless environments
 if (!admin.apps.length) {
-  const serviceAccount = require(path.join(__dirname, 'serviceAccountKey.json'));
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
