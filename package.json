@@ -4,6 +4,7 @@
   "description": "This is the backend service for the **DeepLearn** AI literacy app — an educational tool designed to teach kids about deepfakes, AI detection, and ethical reflection.",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,6 +21,7 @@
   "homepage": "https://github.com/NicoletMK/deeplearn-backend#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "firebase-admin": "^13.4.0"
   }
 }
