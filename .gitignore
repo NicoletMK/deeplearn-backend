@@ -24,3 +24,7 @@ __pycache__/
 *.pth
 # .gitignore
 firebase/serviceAccountKey.json
+
+# .gitignore
+venv/
+.env
