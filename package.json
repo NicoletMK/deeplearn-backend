@@ -1,0 +1,25 @@
+{
+  "name": "deeplearn-backend",
+  "version": "1.0.0",
+  "description": "This is the backend service for the **DeepLearn** AI literacy app — an educational tool designed to teach kids about deepfakes, AI detection, and ethical reflection.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NicoletMK/deeplearn-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/NicoletMK/deeplearn-backend/issues"
+  },
+  "homepage": "https://github.com/NicoletMK/deeplearn-backend#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}
