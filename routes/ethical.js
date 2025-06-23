@@ -6,6 +6,11 @@ router.post('/', async (req, res) => {
   try {
     const { userId, grade, reflectionText, timestamp } = req.body;
 
+    // ✅ Prevent undefined from being saved
+    if (!userId || !reflectionText || !timestamp || grade === undefined) {
+      return res.status(400).json({ error: 'Missing required field' });
+    }
+
     await db.collection('ethicsResponses').add({
       userId,
       grade,
@@ -19,5 +24,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 module.exports = router;
