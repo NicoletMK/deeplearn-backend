@@ -2,7 +2,7 @@
   "name": "deeplearn-backend",
   "version": "1.0.0",
   "description": "This is the backend service for the **DeepLearn** AI literacy app — an educational tool designed to teach kids about deepfakes, AI detection, and ethical reflection.",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
