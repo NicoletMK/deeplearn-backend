@@ -2,29 +2,42 @@ const express = require('express');
 const router = express.Router();
 const db = require('../firebase/firebase');
 
+// Example array of pre-detective video IDs for repetition check
+// You can generate this dynamically if needed
+const preDetectiveVideoIds = [0,1,2,3,4,5,6,7,8,9];
+
 router.post('/', async (req, res) => {
   try {
     const {
       userId,
       session,          // 'pre' or 'post'
       timestamp,
-      pairIndex,        // index of the video pair
+      videoIndex,       // index of the current video in the session
       selectedIndex,    // 0 or 1
       actualLabel,      // 'real' or 'fake'
       correct,          // boolean
-      videos            // [url1, url2]
+      videoUrl,         // single video URL
+      reasonType        // 'artifact' or 'knowledge'
     } = req.body;
 
     const collectionName = session === 'pre' ? 'detectivePre' : 'detectivePost';
 
+    // Determine if the video is repeated from pre-detective
+    let isRepeated = false;
+    if (session === 'post') {
+      isRepeated = preDetectiveVideoIds.includes(videoIndex);
+    }
+
     await db.collection(collectionName).add({
       userId,
       timestamp,
-      pairIndex,
+      videoIndex,
       selectedIndex,
       actualLabel,
       correct,
-      videos,
+      videoUrl,
+      reasonType,
+      isRepeated
     });
 
     return res.status(200).json({ success: true });
