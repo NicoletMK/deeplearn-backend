@@ -7,7 +7,7 @@ const preDetectiveVideoIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 router.post('/', async (req, res) => {
   try {
-    console.log('📥 Detective payload received:', req.body); // <-- DEBUG
+    console.log('📥 Detective payload received:', req.body); // DEBUG
 
     const {
       userId,
@@ -19,35 +19,26 @@ router.post('/', async (req, res) => {
       cluesChosen,   // array of strings
       reasoning,     // free text
       confidence,    // number
-      correct
+      correct,
+      videoIndex     
     } = req.body;
 
     const collectionName = session === 'pre' ? 'detectivePre' : 'detectivePost';
 
-    // Map frontend → backend fields
-    const videoUrl = video;
-    const actualLabel = label;
-    const selectedIndex = userLabel === 'real' ? 0 : 1;
-    const reasonType = cluesChosen && cluesChosen.length > 0 ? cluesChosen[0] : null;
-
-    // If frontend doesn’t send videoIndex, set to null
-    const videoIndex = null;
+    const safeVideoIndex = typeof videoIndex === 'number' ? videoIndex : 0; // fallback
 
     // Detect repeated videos in post-session
-    let isRepeated = false;
-    if (session === 'post' && typeof videoIndex === 'number') {
-      isRepeated = preDetectiveVideoIds.includes(videoIndex);
-    }
+    const isRepeated = session === 'post' && preDetectiveVideoIds.includes(safeVideoIndex);
 
     await db.collection(collectionName).add({
       userId,
       timestamp,
-      videoIndex,
-      selectedIndex,
-      actualLabel,
+      videoIndex: safeVideoIndex,
+      selectedIndex: userLabel === 'real' ? 0 : 1,
+      actualLabel: label,
       correct,
-      videoUrl,
-      reasonType,
+      videoUrl: video,
+      reasonType: cluesChosen && cluesChosen.length > 0 ? cluesChosen[0] : null,
       reasoning,
       confidence,
       isRepeated
